@@ -1,0 +1,77 @@
+STOCK_NAME = "TSLA"
+COMPANY_NAME = "Tesla Inc"
+from phone_number import PHONE_NUM
+
+STOCK_ENDPOINT = "https://www.alphavantage.co/query"
+NEWS_ENDPOINT = "https://newsapi.org/v2/everything"
+
+STOCK_API = " SY1BEHS9X5918LWF"
+NEWS_API = "23ea2c9c7fac41d2a25d2f3bfaf27afc"
+
+YESTERDAY = "2024-06-21"
+DAY_BEFORE_YESTERDAY = "2024-06-20"
+
+
+import requests
+from twilio.rest import Client
+
+#Get yesterday's closing stock price.
+stock_param = {
+    "function": "TIME_SERIES_DAILY",
+    "symbol": STOCK_NAME,
+    "apikey": STOCK_API
+}
+
+stock_response = requests.get(STOCK_ENDPOINT, params=stock_param)
+stock_response.raise_for_status()
+stock_data = stock_response.json()
+print(stock_data)
+yesterday_closing = float(stock_data['Time Series (Daily)']["2024-06-21"]["4. close"])
+print(yesterday_closing)
+#Get the day before yesterday's closing stock price
+
+day_before_closing = float(stock_data['Time Series (Daily)']["2024-06-20"]["4. close"])
+print(day_before_closing)
+#Find the positive difference between 1 and 2.
+stock_diff = abs(day_before_closing - yesterday_closing)
+#Work out the percentage difference in price between closing price yesterday and closing price the day before yesterday.
+stock_average = float(day_before_closing + yesterday_closing) / 2
+# percentage =round((stock_diff/stock_average)*100,3)
+percentage = 7
+print(percentage)
+if percentage > 5:
+    news_param = {
+        "q": "tesla",
+        "sources": "bbc-news,the-verge",
+        "language": "en",
+        "apiKey": NEWS_API
+    }
+
+    news_response = requests.get(NEWS_ENDPOINT, params=news_param)
+    news_response.raise_for_status()
+    news_data = news_response.json()
+    article_list = []
+    for num in range(3):
+        article_title = news_data["articles"][num]["title"]
+        article_description = news_data["articles"][num]["description"]
+        if day_before_closing > yesterday_closing:
+            article = f"TSLA:🔻{percentage}\nHeadline:{article_title}\nBrief:{article_description}\n\n"
+            print(article)
+        else:
+            article = f"TSLA:🔺{percentage}\nHeadline:{article_title}\nBrief:{article_description}\n\n"
+            print(article)
+        article_list.append(article)
+        print(article_list)
+
+        account_sid = 'ACb89d43fbcfeb84df723d7d51c52d58c0'
+        auth_token = '0941e5806e840aec867d716b6f062008'
+        client = Client(account_sid, auth_token)
+
+        message = client.messages.create(
+            from_='whatsapp:+14155238886',
+            body=article,
+            to='whatsapp:PHONE_NUM'
+        )
+
+        print(message.sid)
+
